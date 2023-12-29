@@ -1,29 +1,44 @@
 package main
 
 import (
-	"fmt"
-	"io/ioutil"
+	"context"
 	"log"
 	"net/http"
+	"os"
+	"time"
+	"os/signal"
+
+	"github.com/AzizAhsaan/GolangMicroServices/handlers"
 )
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter,r *http.Request) {
-		log.Println("Hello World")
-		data, err := ioutil.ReadAll(r.Body)
+	l := log.New(os.Stdout,"product-api",log.LstdFlags)
+	hh := handlers.NewHello(l)
+	gb := handlers.NewGoodBye(l)
+	sm := http.NewServeMux()
+	sm.Handle("/",hh)
+	sm.Handle("/goodbye", gb)
+	s := &http.Server{
+		Addr :":9090",
+		Handler: sm,
+		IdleTimeout: 120*time.Second,
+		ReadTimeout: 1 *time.Second,
+		WriteTimeout: 1 *time.Second,
+	}
+	go func() {
+
+		err := s.ListenAndServe()
 		if err != nil {
-			http.Error(w, "Ooops",http.StatusBadRequest)
-			return
+			l.Fatal(err)
 		}
-		log.Printf("Data %s\n",data)
 
-		fmt.Fprintf(w,"Hello %s", data)
-
-	})	
-
-	http.HandleFunc("/goodbye", func(http.ResponseWriter, *http.Request) {
-		fmt.Println("goodbye")
-		log.Println("goodbye")
-	})	
-	http.ListenAndServe(":9090",nil)
+	}()
+	println("sdadsdas")
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, os.Interrupt)
+	signal.Notify(sigChan, os.Kill)
+	cha := <-sigChan
+	l.Println("Recieved terminate, graceful shutdown", cha)
+	tc, _ := context.WithTimeout(context.Background(), 30 *time.Second)
+	s.Shutdown(tc)
 }
