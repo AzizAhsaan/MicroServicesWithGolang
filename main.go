@@ -7,17 +7,14 @@ import (
 	"os"
 	"time"
 	"os/signal"
-
 	"github.com/AzizAhsaan/GolangMicroServices/handlers"
 )
 
 func main() {
 	l := log.New(os.Stdout,"product-api",log.LstdFlags)
-	hh := handlers.NewHello(l)
-	gb := handlers.NewGoodBye(l)
+	products := handlers.NewProducts(l)
 	sm := http.NewServeMux()
-	sm.Handle("/",hh)
-	sm.Handle("/goodbye", gb)
+	sm.Handle("/",products)
 	s := &http.Server{
 		Addr :":9090",
 		Handler: sm,
@@ -33,7 +30,6 @@ func main() {
 		}
 
 	}()
-	println("sdadsdas")
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt)
 	signal.Notify(sigChan, os.Kill)
